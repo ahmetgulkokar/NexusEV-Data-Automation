@@ -11,19 +11,46 @@ def update_gist():
     
     response = requests.get(url, headers=headers)
     
-    # Debug için yanıtı kontrol edelim
     if response.status_code != 200:
         print(f"Hata: Site {response.status_code} kodu döndürdü.")
         return
 
     try:
         data = response.json()
-    except:
-        print("Gelen yanıt JSON formatında değil. Gelen ham veri:")
-        print(response.text[:500]) # İlk 500 karakteri yazdırıp sorunu görelim
+        # DEBUG: Sitenin bize ne gönderdiğini görmek için anahtarları yazdırıyoruz
+        print("Gelen verinin anahtarları:", data.keys())
+        # Eğer 'vehicles' yoksa, gelen verinin ilk 200 karakterini yazdıralım
+        if 'vehicles' not in data:
+            print("Uyarı: 'vehicles' anahtarı bulunamadı. Gelen veri örneği:")
+            print(str(data)[:200])
+            return
+            
+    except Exception as e:
+        print(f"JSON parse hatası: {e}")
         return
 
-    # İşleme devam et...
-    vehicles = [{"brand": v['brand_name'], "model": v['model_name'], "image_url": v['image_url'], "avg_consumption": 16.0} for v in data['vehicles']]
+    # Veriyi temizle
+    vehicles = []
+    for v in data.get('vehicles', []):
+        vehicles.append({
+            "brand": v.get('brand_name', 'Bilinmiyor'),
+            "model": v.get('model_name', 'Bilinmiyor'),
+            "image_url": v.get('image_url', ''),
+            "avg_consumption": 16.0
+        })
     
-    # ... (Gist gönderme kısmı aynı kalacak)
+    # Gist güncelleme kısmı
+    gist_id = os.environ['VEHICLE_GIST_ID']
+    token = os.environ['GIST_TOKEN']
+    headers_gist = {'Authorization': f'token {token}'}
+    data_gist = {"files": {"vehicles.json": {"content": json.dumps(vehicles, ensure_ascii=False, indent=4)}}}
+    
+    update_res = requests.patch(f"https://api.github.com/gists/{gist_id}", headers=headers_gist, json=data_gist)
+    
+    if update_res.status_code == 200:
+        print("Gist başarıyla güncellendi!")
+    else:
+        print(f"Gist güncelleme hatası: {update_res.status_code} - {update_res.text}")
+
+if __name__ == "__main__":
+    update_gist()
