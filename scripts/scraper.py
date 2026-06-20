@@ -2,48 +2,34 @@ import os
 import requests
 import json
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
 
 GIST_ID = os.environ.get('GIST_ID')
 GIST_TOKEN = os.environ.get('GIST_TOKEN')
 
 def fetch_fuel_prices():
-    url = "https://www.petrolofisi.com.tr/arsiv-fiyatlari"
-    
-    # Payload verilerini senin verdiğin bilgilerle güncelledik
-    # Tarihleri otomatik olarak son 20 gün aralığına set edelim
-    end_date = datetime.now().strftime('%d/%m/%Y')
-    start_date = (datetime.now() - timedelta(days=20)).strftime('%d/%m/%Y')
-    
-    payload = {
-        'template': '3',
-        'cityId': '34',      # İstanbul
-        'districtId': '03429', # Bağcılar
-        'startDate': start_date,
-        'endDate': end_date,
-        'isBp': 'false'
-    }
-    
+    # Senin verdiğin URL
+    url = "https://www.tppd.com.tr/gecmis-akaryakit-fiyatlari?id=34&county=413&StartDate=01.06.2024&EndDate=21.06.2026"
     headers = {'User-Agent': 'Mozilla/5.0'}
     
-    # POST isteği ile veriyi gönderiyoruz
-    response = requests.post(url, data=payload, headers=headers)
+    response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.content, 'html.parser')
     
-    table = soup.find('table', {'class': 'table-prices'})
+    # Sayfadaki tabloyu bul (TPPD sitesindeki tablo yapısına göre)
+    table = soup.find('table')
     if not table:
-        return {}
+        return {"error": "Tablo bulunamadı"}
     
     rows = table.find_all('tr')
     fuel_data = {}
     
     for row in rows[1:]:
         cols = row.find_all('td')
-        if len(cols) > 1:
+        if len(cols) >= 3:
             date = cols[0].text.strip()
-            # Fiyatları span içindeki 'with-tax' sınıfından alıyoruz
-            prices = [p.text.strip() for p in cols[1].find_all('span', {'class': 'with-tax'})]
-            fuel_data[date] = prices
+            # Fiyat verilerini hücreden alıyoruz
+            gasoline = cols[1].text.strip()
+            diesel = cols[2].text.strip()
+            fuel_data[date] = {"gasoline": gasoline, "diesel": diesel}
             
     return fuel_data
 
