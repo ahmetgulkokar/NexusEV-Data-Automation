@@ -2,7 +2,7 @@ name: Otomatik Fiyat Güncelleyici
 
 on:
   schedule:
-    - cron: '0 0 * * 1'
+    - cron: '0 9 * * *'  # Bu ifade: Her gün saat 09:00'da çalış demek.
   workflow_dispatch:
 
 jobs:
