@@ -1,21 +1,20 @@
 name: Update Vehicles List
 on:
   schedule:
-    - cron: '0 10 * * 1' # Her Pazartesi saat 10:00'da çalışır
-  workflow_dispatch:
+    - cron: '0 9 * * 1' # Her Pazartesi sabah 09:00
+  workflow_dispatch: # Manuel çalıştırmak için
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.9'
+        uses: actions/setup-python@v4
+        with: {python-version: '3.9'}
       - name: Install dependencies
         run: pip install requests
       - name: Run script
-        run: python scripts/fetch_vehicles.py
+        run: python scripts/update_vehicles.py
         env:
+          VEHICLE_GIST_ID: ${{ secrets.VEHICLE_GIST_ID }}
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-          GIST_ID: ${{ secrets.GIST_ID }}
